@@ -61,9 +61,10 @@ The app requests SDMX-CSV first and falls back to SDMX-JSON. Responses are cache
 ## Run it
 
 **Streamlit Community Cloud (no local Python):**
-1. Upload `app.py`, `requirements.txt`, `README.md`, and `.streamlit/config.toml` (plus `kellogg_logo.png` if you use it) to the public GitHub repo `real-exchange-rate-app`.
-2. Sign in at [share.streamlit.io](https://share.streamlit.io) with GitHub, click **Create app**, choose the repo, branch `main`, main file `app.py`, and under Advanced settings choose Python 3.12.
-3. Click **Deploy**.
+1. In the public GitHub repo `real-exchange-rate-app`, use **Add file > Create new file** to add `app.py` and `requirements.txt` at the top level (no subfolder), pasting only the code. Edit the existing `README.md` the same way.
+2. Optional theme: create `.streamlit/config.toml` (typing the slash creates the folder). Optional logo: upload `kellogg_logo.png` at the top level. The app runs without either.
+3. Sign in at [share.streamlit.io](https://share.streamlit.io) with GitHub, choose **Create app > Yup, I have an app**, select the repo, branch `main` and file `app.py`. Under Advanced settings choose Python 3.12 and leave Secrets empty (the app needs no keys).
+4. Click **Deploy** and save the `streamlit.app` link.
 
 **Locally (optional):**
 ```bash
@@ -77,6 +78,7 @@ The calculation was checked against a FRED-based spreadsheet for Euro area vs. U
 - RER for January 1999 = 0.4026, matching the spreadsheet.
 - With Country 1 = Euro area and Country 2 = U.S., S(t) is USD per EUR (1.1505 for September 2026, matching FRED's monthly average).
 - Swapping Country 1 and Country 2 gives the reciprocal RER.
+- United Kingdom as Country 1 and U.S. as Country 2 gives S in USD per GBP (S = 1 / GBP per USD), labeled "USD per GBP" in the app and `S_USD_per_GBP` in the CSV. The exported Real Index averages 100 for any window when RER* is the window average, and S × P1 / P2 rebuilt from the exported columns equals the exported RER.
 - The Real Index averages exactly 100 over any selected window.
 
 ## Prompt log
@@ -129,4 +131,8 @@ Model: Claude (configured as `claude-opus-5-5`; the serving model may differ). P
 
 **Prompt 11.** Create a README with a cleaned-up prompt log that covers the entire conversation.
 
-> This section.
+> Wrote this prompt log.
+
+**Prompt 12.** Here are the remaining assignment instructions (save the files on GitHub, publish on Streamlit, test UK as Country 1 and U.S. as Country 2 so that S is USD per GBP, check that the exported real index averages 100, verify one RER by hand, and test all three chart views). Check the app against them.
+
+> Changed labels and CSV columns to currency codes so the UK test reads "USD per GBP" and `S_USD_per_GBP`, raised the minimum Streamlit version to one that supports every layout option used, and capped very long half-lives at "Over 50 years". Tested UK vs. U.S. with mock IMF responses: S = 1 / (GBP per USD), the exported Real Index averaged exactly 100 for two different windows, and S × P1 / P2 from the exported columns matched the exported RER.

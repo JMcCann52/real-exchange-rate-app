@@ -42,6 +42,25 @@ GREY = "#716C6B"
 INFLATION_LOOKBACK = 60  # months used for the relative price trend in forecasts
 BACKTEST_MIN_HISTORY = 60  # months of history required before the first backtest forecast
 
+
+# ISO 4217 currency codes for labels; countries not listed fall back to their name.
+CURRENCY = {
+    "G163": "EUR", "USA": "USD", "GBR": "GBP", "JPN": "JPY", "CHN": "CNY", "CAN": "CAD",
+    "AUS": "AUD", "NZL": "NZD", "CHE": "CHF", "SWE": "SEK", "NOR": "NOK", "DNK": "DKK",
+    "ISL": "ISK", "POL": "PLN", "CZE": "CZK", "HUN": "HUF", "ROU": "RON", "BGR": "BGN",
+    "TUR": "TRY", "RUS": "RUB", "UKR": "UAH", "ISR": "ILS", "SAU": "SAR", "ARE": "AED",
+    "QAT": "QAR", "KWT": "KWD", "EGY": "EGP", "ZAF": "ZAR", "NGA": "NGN", "KEN": "KES",
+    "MAR": "MAD", "IND": "INR", "PAK": "PKR", "BGD": "BDT", "LKA": "LKR", "IDN": "IDR",
+    "MYS": "MYR", "SGP": "SGD", "THA": "THB", "PHL": "PHP", "VNM": "VND", "KOR": "KRW",
+    "HKG": "HKD", "TWN": "TWD", "MEX": "MXN", "BRA": "BRL", "ARG": "ARS", "CHL": "CLP",
+    "COL": "COP", "PER": "PEN", "URY": "UYU", "VEN": "VES",
+    # euro-area members (national currencies before euro adoption)
+    "DEU": "EUR", "FRA": "EUR", "ITA": "EUR", "ESP": "EUR", "NLD": "EUR", "BEL": "EUR",
+    "AUT": "EUR", "PRT": "EUR", "IRL": "EUR", "FIN": "EUR", "GRC": "EUR", "LUX": "EUR",
+    "SVN": "EUR", "SVK": "EUR", "EST": "EUR", "LVA": "EUR", "LTU": "EUR", "CYP": "EUR",
+    "MLT": "EUR", "HRV": "EUR",
+}
+
 HEADERS_UA = {"User-Agent": "real-exchange-rate-app/1.0 (Streamlit; educational use)"}
 
 ACCEPT_CSV = "application/vnd.sdmx.data+csv;version=2.0.0"
@@ -405,9 +424,11 @@ window, rer_star = apply_window(panel, start, end, base_month)
 n_valid = int(window["RER"].notna().sum())
 n_total = len(window)
 latest = window.dropna(subset=["RER"]).iloc[-1]
-cur1 = lab1.split(" (")[0]
+cur1 = lab1.split(" (")[0]  # country names, for prose
 cur2 = lab2.split(" (")[0]
-unit = f"{cur2} per {cur1}"
+ccy1 = CURRENCY.get(iso1, f"{cur1} currency")
+ccy2 = CURRENCY.get(iso2, f"{cur2} currency")
+unit = f"{ccy2} per {ccy1}"
 hl = half_life(window["RER"])
 path = forecast_path(window, rer_star, hl["rho"], horizon)
 bench_label = "window average" if base_month is None else f"{fmt(base_month)} base"
@@ -424,7 +445,10 @@ m5.metric("PPP-implied S (RER at RER*)", f"{latest['S_PPP']:,.4f}",
           help="S_PPP(t) = RER* × P2(t) / P1(t)")
 m6.metric("Actual vs. PPP-implied", f"{latest['Misvaluation']:+.1%}",
           help="S / S_PPP − 1. Negative means Country 1's currency is cheap in real terms.")
-if np.isfinite(hl["half_life"]):
+if np.isfinite(hl["half_life"]) and hl["half_life"] > 600:
+    m7.metric(f"Half-life of RER deviations (ρ = {hl['rho']:.3f})", "Over 50 years",
+              help="Deviations barely shrink in this window, so the forecast assumes almost no reversion.")
+elif np.isfinite(hl["half_life"]):
     m7.metric(f"Half-life of RER deviations (ρ = {hl['rho']:.3f})", f"{hl['half_life'] / 12:.1f} years",
               help="From an AR(1) on log RER over the window. Studies typically find 3 to 5 years.")
 else:
@@ -485,9 +509,9 @@ out = window.reset_index()[
     ["month", "C1_per_USD", "C2_per_USD", "S", "P1", "P2", "RER", "RER_star", "Real_Index",
      "S_PPP", "Misvaluation"]
 ].rename(columns={
-    "C1_per_USD": f"{iso1}_LCU_per_USD",
-    "C2_per_USD": f"{iso2}_LCU_per_USD",
-    "S": f"S_{iso2}_per_{iso1}",
+    "C1_per_USD": f"{iso1}_{CURRENCY.get(iso1, 'LCU')}_per_USD",
+    "C2_per_USD": f"{iso2}_{CURRENCY.get(iso2, 'LCU')}_per_USD",
+    "S": f"S_{CURRENCY.get(iso2, iso2)}_per_{CURRENCY.get(iso1, iso1)}",
     "P1": f"P1_CPI_{iso1}",
     "P2": f"P2_CPI_{iso2}",
     "S_PPP": "S_PPP_implied",
